@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
+
 	"github.com/gorilla/mux"
 )
 var recipesList []Recipe
@@ -58,6 +60,19 @@ func deleteRecipeById(w http.ResponseWriter, r *http.Request){
 	}
    http.Error(w,"Invalid Id",http.StatusNoContent)
 }
+
+func createRecipe(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Content-Type","application/json")
+	var newRecipe Recipe
+	json.NewDecoder(r.Body).Decode(&newRecipe)
+	newRecipe.ID = strconv.Itoa(len(recipesList) + 1)
+	recipesList = append(recipesList, newRecipe)
+	if err := json.NewEncoder(w).Encode(newRecipe); err != nil{
+		http.Error(w,"failed to create new recipe",http.StatusConflict)
+		return
+	}
+
+}
 func main() {
     recipesList = append(recipesList, Recipe{ID: "1",Name: "Biriyani",Type:"Lunch",Cooker: &Cooker{Name: "Hina",Age: 30}})
 	recipesList = append(recipesList, Recipe{ID: "2",Name: "Polaw",Type:"Dinner",Cooker: &Cooker{Name: "Zoe",Age: 20}})
@@ -66,7 +81,7 @@ func main() {
 	r.HandleFunc("/recipes",getAllRecipes).Methods("GET")
 	r.HandleFunc("/recipe/{id}",getRecipeById).Methods("GET")
 	r.HandleFunc("/delete/{id}",deleteRecipeById).Methods("DELETE")
-	// r.HandleFunc("/create",createRecipe)
+	r.HandleFunc("/create",createRecipe).Methods("POST")
 	// r.HandleFunc("/update",updateRecipe)
 
 	fmt.Println("server running on 8080")
