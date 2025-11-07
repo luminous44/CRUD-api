@@ -1,6 +1,7 @@
 package main
 
 import (
+	 "math/rand"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -61,15 +62,34 @@ func deleteRecipeById(w http.ResponseWriter, r *http.Request){
    http.Error(w,"Invalid Id",http.StatusNoContent)
 }
 
+
 func createRecipe(w http.ResponseWriter, r *http.Request){
 	w.Header().Set("Content-Type","application/json")
 	var newRecipe Recipe
 	json.NewDecoder(r.Body).Decode(&newRecipe)
-	newRecipe.ID = strconv.Itoa(len(recipesList) + 1)
+	newRecipe.ID = strconv.Itoa(rand.Intn(100))
 	recipesList = append(recipesList, newRecipe)
 	if err := json.NewEncoder(w).Encode(newRecipe); err != nil{
 		http.Error(w,"failed to create new recipe",http.StatusConflict)
 		return
+	}
+
+}
+
+func updateRecipe(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Content-Type","application/json")
+	param := mux.Vars(r)
+	for index,item := range recipesList{
+		if item.ID == param["id"] {
+			recipesList = append(recipesList[:index],recipesList[index+1:]... )
+			var updateItem Recipe
+			_= json.NewDecoder(r.Body).Decode(&updateItem)
+			updateItem.ID = param["id"] 
+			recipesList = append(recipesList, updateItem)
+			json.NewEncoder(w).Encode(updateItem)
+			return
+		}
+		
 	}
 
 }
@@ -82,7 +102,7 @@ func main() {
 	r.HandleFunc("/recipe/{id}",getRecipeById).Methods("GET")
 	r.HandleFunc("/delete/{id}",deleteRecipeById).Methods("DELETE")
 	r.HandleFunc("/create",createRecipe).Methods("POST")
-	// r.HandleFunc("/update",updateRecipe)
+	r.HandleFunc("/update/{id}",updateRecipe).Methods("PUT")
 
 	fmt.Println("server running on 8080")
     
